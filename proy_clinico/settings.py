@@ -50,6 +50,7 @@ THIRD_PARTY_APPS = [
 LOCAL_APPS = [
     'applications.security.apps.SecurityConfig',
     'applications.doctor.apps.DoctorConfig',
+    
 ]
 INSTALLED_APPS = INSTALLED_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
@@ -102,7 +103,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'medicos',
         'USER': 'postgres',
-        'PASSWORD': '123',
+        'PASSWORD': '1234',
         'HOST': 'localhost',  # o la IP del servidor de base de datos
         'PORT': '5432',        # puerto por defecto de PostgreSQL
     }
@@ -142,14 +143,14 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
-STATICFILES_DIRS = (os.path.join(BASE_DIR, 'static'),)#carpeta fisica de archivos estaticos
+STATICFILES_DIRS = (os.path.join(BASE_DIR, 'theme', 'static'),)#carpeta fisica de archivos estaticos
 MEDIA_ROOT = os.path.join(BASE_DIR,'media') # carpeta fisica de archivos de Imagenes
 MEDIA_URL = '/media/' # url de imagenes
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 AUTH_USER_MODEL = 'security.User'
-LOGIN_URL = '/auth/signin'
+LOGIN_URL = '/security/signin/'
 #SESSION_SERIALIZER = 'django.contrib.sessions.serializers.PickleSerializer'
 # SESSION_SERIALIZER = 'django.contrib.sessions.serializers.PickleSerializer'
 SESSION_SERIALIZER = 'django.contrib.sessions.serializers.JSONSerializer'

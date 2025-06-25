@@ -32,7 +32,7 @@ menu3 = Menu.objects.create(
 
 # Create Modules using bulk_create
 modules = [
-    # Modules for Pacientes menu
+    
     Module(url='pacientes/', name='Registro de Pacientes', menu_id=menu1.id,
            description='Gestión de información de pacientes', icon='bi bi-person-plus', order=1),
     Module(url='historial/', name='Historial Médico', menu=menu1, 
@@ -40,7 +40,7 @@ modules = [
     Module(url='seguimiento/', name='Seguimiento', menu=menu1, 
            description='Seguimiento de tratamientos y evolución', icon='bi bi-graph-up', order=3),
     
-    # Modules for Consultas menu
+    
     Module(url='citas/', name='Citas', menu=menu2, 
            description='Programación de citas médicas', icon='bi bi-calendar-date', order=1),
     Module(url='diagnosticos/', name='Diagnósticos', menu=menu2, 
@@ -48,7 +48,7 @@ modules = [
     Module(url='recetas/', name='Recetas', menu=menu2, 
            description='Emisión de recetas médicas', icon='bi bi-file-earmark-text', order=3),
     
-    # Modules for Administración menu
+    
     Module(url='usuarios/', name='Usuarios', menu=menu3, 
            description='Gestión de usuarios del sistema', icon='bi bi-people', order=1),
     Module(url='configuracion/', name='Configuración', menu=menu3, 
