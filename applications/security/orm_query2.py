@@ -1,193 +1,358 @@
-import os
-from django.db.models import Q
+from django.db import models
+from django.contrib.auth.models import Group, Permission
+from django.contrib.contenttypes.models import ContentType
+from applications.security.models import GroupModulePermission, Menu, Module, User
 
-from applications.security.models import Menu, Module
-# Obtener el módulo "Registro de Pacientes" por su URL
-def pausar_y_limpiar():
-    input("Presione una tecla para continuar...")
-    os.system('cls' if os.name == 'nt' else 'clear')
+# Verificar si ya existe el menú de Seguridad
+menu_security, created = Menu.objects.get_or_create(
+    name='Seguridad',
+    defaults={
+        'icon': 'fa fa-shield-alt',
+        'order': 1
+    }
+)
+
+if created:
+    print("Menú de Seguridad creado")
+else:
+    print("Menú de Seguridad ya existía, usando el existente")
+
+# Verificar módulos existentes para no duplicar
+existing_modules = {
+    module.url: module 
+    for module in Module.objects.filter(menu=menu_security)
+}
+
+# Lista para los nuevos módulos que serán creados
+new_modules = []
+
+# Definiciones de módulos
+module_definitions = [
+    {
+        'url': 'security/menu_list/', 
+        'name': 'Gestión de Menús', 
+        'description': 'Administrar los menús del sistema', 
+        'icon': 'fa fa-list', 
+        'order': 1
+    },
+    {
+        'url': 'security/module_list/', 
+        'name': 'Gestión de Módulos', 
+        'description': 'Administrar los módulos del sistema', 
+        'icon': 'fa fa-th-large', 
+        'order': 2
+    },
+    {
+        'url': 'security/user_list/', 
+        'name': 'Gestión de Usuarios', 
+        'description': 'Administrar los usuarios del sistema', 
+        'icon': 'fa fa-users', 
+        'order': 3
+    },
+    {
+        'url': 'security/group_module_permission_list/', 
+        'name': 'Permisos por Módulo', 
+        'description': 'Asignar permisos específicos a grupos por cada módulo', 
+        'icon': 'fa fa-shield-alt', 
+        'order': 4
+    }
+]
+
+# Crear o actualizar módulos
+created_security_modules = []
+for module_def in module_definitions:
+    if module_def['url'] in existing_modules:
+        # Usar módulo existente
+        module = existing_modules[module_def['url']]
+        print(f"Módulo {module_def['name']} ya existía, usando el existente")
+        created_security_modules.append(module)
+    else:
+        # Crear nuevo módulo
+        module = Module(menu=menu_security, **module_def)
+        new_modules.append(module)
+
+# Crear módulos que no existen
+if new_modules:
+    batch_created_modules = Module.objects.bulk_create(new_modules)
+    created_security_modules.extend(batch_created_modules)
+    print(f"Creados {len(batch_created_modules)} nuevos módulos")
+
+# Asegurarnos que tenemos los 5 módulos
+module_menu = next((m for m in created_security_modules if m.url == 'security/menu_list/'), None)
+module_modules = next((m for m in created_security_modules if m.url == 'security/module_list/'), None)
+module_users = next((m for m in created_security_modules if m.url == 'security/user_list/'), None)
+module_group_perms = next((m for m in created_security_modules if m.url == 'security/group_module_permission_list/'), None)
+
+# Obtener ContentTypes para menu y module
+menu_ct = ContentType.objects.get(app_label='security', model='menu')
+module_ct = ContentType.objects.get(app_label='security', model='module')
+group_module_permission_ct = ContentType.objects.get(app_label='security', model='groupmodulepermission')
+user_ct = ContentType.objects.get(app_label='security', model='user')
+
+# Obtener ContentTypes para patient y diagnosis si existen
+try:
+    patient_ct = ContentType.objects.get(app_label='doctor', model='patient')
+    diagnosis_ct = ContentType.objects.get(app_label='doctor', model='diagnosis')
+    has_medical_models = True
+except ContentType.DoesNotExist:
+    has_medical_models = False
+    print("Aviso: No se encontraron los modelos de pacientes o diagnósticos")
+
+# Obtener o crear permisos para menu (correctamente)
+menu_view, _ = Permission.objects.get_or_create(
+    content_type=menu_ct, codename='view_menu', 
+    defaults={'name': 'Can view Menu'}
+)
+menu_add, _ = Permission.objects.get_or_create(
+    content_type=menu_ct, codename='add_menu', 
+    defaults={'name': 'Can add Menu'}
+)
+menu_change, _ = Permission.objects.get_or_create(
+    content_type=menu_ct, codename='change_menu', 
+    defaults={'name': 'Can change Menu'}
+)
+menu_delete, _ = Permission.objects.get_or_create(
+    content_type=menu_ct, codename='delete_menu', 
+    defaults={'name': 'Can delete Menu'}
+)
+
+# Obtener o crear permisos para module (correctamente)
+module_view, _ = Permission.objects.get_or_create(
+    content_type=module_ct, codename='view_module', 
+    defaults={'name': 'Can view Module'}
+)
+module_add, _ = Permission.objects.get_or_create(
+    content_type=module_ct, codename='add_module', 
+    defaults={'name': 'Can add Module'}
+)
+module_change, _ = Permission.objects.get_or_create(
+    content_type=module_ct, codename='change_module', 
+    defaults={'name': 'Can change Module'}
+)
+module_delete, _ = Permission.objects.get_or_create(
+    content_type=module_ct, codename='delete_module', 
+    defaults={'name': 'Can delete Module'}
+)
+
+# Obtener o crear permisos para group_module_permission
+gmp_view, _ = Permission.objects.get_or_create(
+    content_type=group_module_permission_ct, codename='view_groupmodulepermission', 
+    defaults={'name': 'Can view Grupo Módulo Permiso'}
+)
+gmp_add, _ = Permission.objects.get_or_create(
+    content_type=group_module_permission_ct, codename='add_groupmodulepermission', 
+    defaults={'name': 'Can add Grupo Módulo Permiso'}
+)
+gmp_change, _ = Permission.objects.get_or_create(
+    content_type=group_module_permission_ct, codename='change_groupmodulepermission', 
+    defaults={'name': 'Can change Grupo Módulo Permiso'}
+)
+gmp_delete, _ = Permission.objects.get_or_create(
+    content_type=group_module_permission_ct, codename='delete_groupmodulepermission', 
+    defaults={'name': 'Can delete Grupo Módulo Permiso'}
+)
+
+# Obtener o crear permisos para user
+user_view, _ = Permission.objects.get_or_create(
+    content_type=user_ct, codename='view_user', 
+    defaults={'name': 'Can view User'}
+)
+user_add, _ = Permission.objects.get_or_create(
+    content_type=user_ct, codename='add_user', 
+    defaults={'name': 'Can add User'}
+)
+user_change, _ = Permission.objects.get_or_create(
+    content_type=user_ct, codename='change_user', 
+    defaults={'name': 'Can change User'}
+)
+user_delete, _ = Permission.objects.get_or_create(
+    content_type=user_ct, codename='delete_user', 
+    defaults={'name': 'Can delete User'}
+)
+
+
+# Obtener permisos para pacientes y diagnósticos si existen
+if has_medical_models:
+    # Patient permissions
+    patient_view, _ = Permission.objects.get_or_create(
+        content_type=patient_ct, codename='view_patient',
+        defaults={'name': 'Can view Paciente'}
+    )
+    patient_add, _ = Permission.objects.get_or_create(
+        content_type=patient_ct, codename='add_patient',
+        defaults={'name': 'Can add Paciente'}
+    )
+    patient_change, _ = Permission.objects.get_or_create(
+        content_type=patient_ct, codename='change_patient',
+        defaults={'name': 'Can change Paciente'}
+    )
+    patient_delete, _ = Permission.objects.get_or_create(
+        content_type=patient_ct, codename='delete_patient',
+        defaults={'name': 'Can delete Paciente'}
+    )
     
-modulo_pacientes = Module.objects.get(url='pacientes/')
-print(modulo_pacientes)
-pausar_y_limpiar()
-# Salida: Registro de Pacientes
+    # Diagnosis permissions
+    diagnosis_view, _ = Permission.objects.get_or_create(
+        content_type=diagnosis_ct, codename='view_diagnosis',
+        defaults={'name': 'Can view Diagnóstico'}
+    )
+    diagnosis_add, _ = Permission.objects.get_or_create(
+        content_type=diagnosis_ct, codename='add_diagnosis',
+        defaults={'name': 'Can add Diagnóstico'}
+    )
+    diagnosis_change, _ = Permission.objects.get_or_create(
+        content_type=diagnosis_ct, codename='change_diagnosis',
+        defaults={'name': 'Can change Diagnóstico'}
+    )
+    diagnosis_delete, _ = Permission.objects.get_or_create(
+        content_type=diagnosis_ct, codename='delete_diagnosis',
+        defaults={'name': 'Can delete Diagnóstico'}
+    )
 
-# Obtener el módulo "Configuración" por su nombre
-modulo_config = Module.objects.get(name='Configuración')
-print(f"URL: {modulo_config.url}, Menú: {modulo_config.menu.name}")
-# Salida: URL: configuracion/, Menú: Administración
-pausar_y_limpiar()
+# Asignar permisos a módulos (si existen)
+if module_menu:
+    module_menu.permissions.clear()  # Limpiar permisos existentes
+    module_menu.permissions.add(menu_view, menu_add, menu_change, menu_delete)
+    print("Permisos asignados al módulo de Menús")
 
-# Obtener un módulo por su ID (asumiendo que el ID de "Citas" es 4)
-modulo_citas = Module.objects.get(id=4)
-print(f"{modulo_citas.name} - {modulo_citas.description}")
-# Salida: Citas - Programación de citas médicas
-pausar_y_limpiar()
-# Obtener todos los módulos del menú "Pacientes"
-modulos_pacientes = Module.objects.filter(menu__name='Pacientes')
-for m in modulos_pacientes:
-    print(m.name)
-pausar_y_limpiar()
-# Salida:
-# Registro de Pacientes
-# Historial Médico
-# Seguimiento
+if module_modules:
+    module_modules.permissions.clear()  # Limpiar permisos existentes
+    module_modules.permissions.add(module_view, module_add, module_change, module_delete)
+    print("Permisos asignados al módulo de Módulos")
 
-# Obtener módulos que contengan la palabra "Gestión" en su descripción
-modulos_gestion = Module.objects.filter(description__icontains='gestión')
-for m in modulos_gestion:
-    print(f"{m.name}: {m.description}")
-pausar_y_limpiar()
-# Salida:
-# Registro de Pacientes: Gestión de información de pacientes
-# Usuarios: Gestión de usuarios del sistema
+if module_group_perms:
+    module_group_perms.permissions.clear()  # Limpiar permisos existentes
+    module_group_perms.permissions.add(gmp_view, gmp_add, gmp_change, gmp_delete)
+    print("Permisos asignados al módulo de Permisos por Módulo")
 
-# Filtrar módulos con orden menor a 2 en cualquier menú
-modulos_primeros = Module.objects.filter(order__lt=2)
-for m in modulos_primeros:
-    print(f"{m.name} (Menú: {m.menu.name})")
-pausar_y_limpiar()
-# Salida:
-# Registro de Pacientes (Menú: Pacientes)
-# Citas (Menú: Consultas)
-# Usuarios (Menú: Administración)
+# Asignar permisos al módulo de usuarios
+if module_users:
+    module_users.permissions.clear()  # Limpiar permisos existentes
+    module_users.permissions.add(user_view, user_add, user_change, user_delete)
+    print("Permisos asignados al módulo de Usuarios")
 
-# Combinar filtros: módulos del menú "Administración" con order > 1
-modulos_admin_avanzados = Module.objects.filter(menu__name='Administración', order__gt=1)
-for m in modulos_admin_avanzados:
-    print(f"{m.name} (order: {m.order})")
-pausar_y_limpiar()
-# Salida:
-# Configuración (order: 2)
-# Reportes (order: 3)
 
-# Usar OR lógico: módulos de "Pacientes" o "Consultas" con order=1
+# Crear grupo de administradores si no existe
+group_admin, created_group = Group.objects.get_or_create(name='Administradores')
+if created_group:
+    print("Grupo Administradores creado")
+else:
+    print("Grupo Administradores ya existía")
 
-modulos_principales = Module.objects.filter(
-    Q(menu__name='Pacientes', order=1) | Q(menu__name='Consultas', order=1)
-)
-for m in modulos_principales:
-    print(f"{m.name} (Menú: {m.menu.name})")
-pausar_y_limpiar()
-# Salida:
-# Registro de Pacientes (Menú: Pacientes)
-# Citas (Menú: Consultas)
-# Obtener el menú "Consultas"
-menu_consultas = Menu.objects.get(name='Consultas')
-print(f"{menu_consultas.name} (Icono: {menu_consultas.icon}, Orden: {menu_consultas.order})")
-# Salida: Consultas (Icono: bi bi-calendar-check, Orden: 2)
+# Verificar si ya existen GroupModulePermission para evitar duplicados
+if module_menu:
+    gmp_admin_menu, created = GroupModulePermission.objects.get_or_create(
+        group=group_admin, module=module_menu
+    )
+    gmp_admin_menu.permissions.clear()
+    gmp_admin_menu.permissions.add(menu_view, menu_add, menu_change, menu_delete)
+    print("Permisos de menú asignados al grupo Administradores")
 
-# Obtener menús con orden mayor a 2
-menus_secundarios = Menu.objects.filter(order__gt=2)
-for m in menus_secundarios:
-    print(f"{m.name} (order: {m.order})")
-# Salida:
-# Administración (order: 4)
+if module_modules:
+    gmp_admin_module, created = GroupModulePermission.objects.get_or_create(
+        group=group_admin, module=module_modules
+    )
+    gmp_admin_module.permissions.clear()
+    gmp_admin_module.permissions.add(module_view, module_add, module_change, module_delete)
+    print("Permisos de módulo asignados al grupo Administradores")
 
-# Obtener menús ordenados por orden ascendente
-menus_ordenados = Menu.objects.all().order_by('order')
-for m in menus_ordenados:
-    print(f"{m.name} (order: {m.order})")
-# Salida:
-# Pacientes (order: 1)
-# Consultas (order: 2)
-# Administración (order: 4)
+if module_group_perms:
+    gmp_admin_group_perms, created = GroupModulePermission.objects.get_or_create(
+        group=group_admin, module=module_group_perms
+    )
+    gmp_admin_group_perms.permissions.clear()
+    gmp_admin_group_perms.permissions.add(gmp_view, gmp_add, gmp_change, gmp_delete)
+    print("Permisos de gestión de permisos por módulo asignados al grupo Administradores")
 
-# Seleccionar el menú "Administración" y obtener todos sus módulos
-menu_admin = Menu.objects.get(name='Administración')
-modulos_admin = menu_admin.modules.all()
-print(f"Módulos del menú {menu_admin.name}:")
-for m in modulos_admin:
-    print(f"- {m.name} (url: {m.url})")
-# Salida:
-# Módulos del menú Administración:
-# - Usuarios (url: usuarios/)
-# - Configuración (url: configuracion/)
-# - Reportes (url: reportes/)
+# Asignar permisos de usuario al grupo Administradores
+if module_users:
+    gmp_admin_users, created = GroupModulePermission.objects.get_or_create(
+        group=group_admin, module=module_users
+    )
+    gmp_admin_users.permissions.clear()
+    gmp_admin_users.permissions.add(user_view, user_add, user_change, user_delete)
+    print("Permisos de gestión de usuarios asignados al grupo Administradores")
 
-# Obtener y ordenar módulos del menú "Pacientes" por nombre
-menu_pacientes = Menu.objects.get(name='Pacientes')
-modulos_pacientes_por_nombre = menu_pacientes.modules.all().order_by('name')
-print(f"Módulos de {menu_pacientes.name} ordenados por nombre:")
-for m in modulos_pacientes_por_nombre:
-    print(f"- {m.name}")
-# Salida:
-# Módulos de Pacientes ordenados por nombre:
-# - Historial Médico
-# - Registro de Pacientes
-# - Seguimiento
 
-# Obtener el módulo "Recetas" con su menú relacionado
-modulo_recetas = Module.objects.select_related('menu').get(name='Recetas')
-print(f"Módulo: {modulo_recetas.name}")
-print(f"Pertenece al menú: {modulo_recetas.menu.name}")
-print(f"Descripción: {modulo_recetas.description}")
-# Salida:
-# Módulo: Recetas
-# Pertenece al menú: Consultas
-# Descripción: Emisión de recetas médicas
+# NUEVO: Asignar permisos a todos los demás módulos
+print("\nAsignando permisos de administrador a todos los módulos del sistema...")
+all_modules = Module.objects.all()
+modules_count = 0
 
-# Obtener módulos del menú "Consultas" ordenados por orden
-menu_consultas = Menu.objects.get(name='Consultas')
-modulos_consultas = menu_consultas.modules.all().order_by('order')
-print(f"Módulos de {menu_consultas.name} en orden:")
-for i, m in enumerate(modulos_consultas, 1):
-    print(f"{i}. {m.name} (order: {m.order})")
-# Salida:
-# Módulos de Consultas en orden:
-# 1. Citas (order: 1)
-# 2. Diagnósticos (order: 2)
-# 3. Recetas (order: 3)
-# Obtener conteo de módulos por menú
-from django.db.models import Count
-conteo_por_menu = Menu.objects.annotate(total_modules=Count('modules')).values('name', 'total_modules')
-print("Cantidad de módulos por menú:")
-for item in conteo_por_menu:
-    print(f"- {item['name']}: {item['total_modules']} módulos")
-x=input("Presione una tecla para continuar...")
-# Salida:
-# Cantidad de módulos por menú:
-# - Pacientes: 3 módulos
-# - Consultas: 3 módulos
-# - Administración: 3 módulos
+for module in all_modules:
+    # No reprocesar los módulos que ya manejamos
+    if module in [module_menu, module_modules, module_users, module_group_perms]:
+        continue
+        
+    gmp_admin_all, created = GroupModulePermission.objects.get_or_create(
+        group=group_admin, module=module
+    )
+    
+    # Obtener todos los permisos asociados a este módulo
+    module_permissions = module.permissions.all()
+    
+    if not module_permissions:
+        print(f"⚠️ El módulo '{module.name}' no tiene permisos asignados")
+        continue
+        
+    # Asignar todos los permisos del módulo al grupo de administradores
+    gmp_admin_all.permissions.clear()
+    gmp_admin_all.permissions.add(*module_permissions)
+    modules_count += 1
+    
+print(f"✅ Permisos actualizados para {modules_count} módulos adicionales")
 
-# Menús con sus módulos (usando prefetch_related para optimizar)
-menus_con_modulos = Menu.objects.prefetch_related('modules').all().order_by('order')
-for menu in menus_con_modulos:
-    print(f"\nMenú: {menu.name}")
-    print("Módulos:")
-    for modulo in menu.modules.all().order_by('order'):
-        print(f"- {modulo.name} (url: {modulo.url})")
-# Salida:
-# Menú: Pacientes
-# Módulos:
-# - Registro de Pacientes (url: pacientes/)
-# - Historial Médico (url: historial/)
-# - Seguimiento (url: seguimiento/)
-#
-# Menú: Consultas
-# Módulos:
-# - Citas (url: citas/)
-# - Diagnósticos (url: diagnosticos/)
-# - Recetas (url: recetas/)
-#
-# Menú: Administración
-# Módulos:
-# - Usuarios (url: usuarios/)
-# - Configuración (url: configuracion/)
-# - Reportes (url: reportes/)
+# NUEVO: Asignar permisos de modelos médicos al grupo admin (si existen)
+if has_medical_models:
+    # Asignar permisos directos al grupo
+    patient_permissions = [patient_view, patient_add, patient_change, patient_delete]
+    diagnosis_permissions = [diagnosis_view, diagnosis_add, diagnosis_change, diagnosis_delete]
+    
+    # Asignar permisos de pacientes
+    group_admin.permissions.add(*patient_permissions)
+    
+    # Asignar permisos de diagnósticos
+    group_admin.permissions.add(*diagnosis_permissions)
+    
+    print("✅ Permisos de pacientes y diagnósticos asignados al grupo Administradores")
 
-# Buscar módulos que contengan "médic" en nombre o descripción
+# Buscar usuario existente o crear uno nuevo
+try:
+    admin_user = User.objects.get(username='admin')
+    admin_user.groups.add(group_admin)
+    print("Usuario 'admin' añadido al grupo Administradores")
+except User.DoesNotExist:
+    # Crear usuario admin si no existe
+    admin_user = User.objects.create_superuser(
+        username='admin',
+        email='admin@sistema.com',
+        password='1234',
+        first_name='Administrador',
+        last_name='Sistema',
+        dni='9999999999',
+        direction='Sistema',
+        phone='9999999999',
+        is_staff=True
+    )
+    admin_user.groups.add(group_admin)
+    print("Usuario 'admin' creado y añadido al grupo Administradores")
 
-modulos_medicos = Module.objects.filter(
-    Q(name__icontains='médic') | Q(description__icontains='médic')
-)
-print("Módulos relacionados con medicina:")
-for m in modulos_medicos:
-    print(f"- {m.name}: {m.description}")
-# Salida:
-# Módulos relacionados con medicina:
-# - Historial Médico: Historial clínico de pacientes
-# - Citas: Programación de citas médicas
-# - Diagnósticos: Registro de diagnósticos médicos
-# - Recetas: Emisión de recetas médicas
+print("\n======== CONFIGURACIÓN COMPLETADA ========")
+print("✅ Menú de seguridad y módulos creados exitosamente!")
+print("✅ Grupo Administradores ahora tiene acceso a TODOS los módulos del sistema")
+print("✅ Se han asignado permisos específicos a los módulos de:")
+print("   - Gestión de Menús")
+print("   - Gestión de Módulos")
+print("   - Gestión de Usuarios")
+print("   - Gestión de Grupos")
+print("   - Gestión de Permisos por Módulo")
+
+print("\nPuedes acceder al sistema usando:")
+print("- URL de menús: /security/menu_list/")
+print("- URL de módulos: /security/module_list/")
+print("- URL de usuarios: /security/user_list/")
+print("- URL de grupos: /security/group_list/")
+print("- URL de gestión de permisos por módulo: /security/group_module_permission_list/")
+
+print("\nSi algún módulo no está visible, ejecuta este script nuevamente")
+print("o verifica los permisos asignados al grupo Administradores.")
