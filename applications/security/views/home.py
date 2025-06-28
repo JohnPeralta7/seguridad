@@ -3,7 +3,7 @@
 from django.views.generic import TemplateView
 from applications.security.components.menu_module import MenuModule
 from applications.security.components.mixin_crud import PermissionMixin
-from django.contrib.auth.mixins import LoginRequiredMixin
+
 
 class ModuloTemplateView(PermissionMixin,TemplateView):
     template_name = 'home.html'

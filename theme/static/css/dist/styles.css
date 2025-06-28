@@ -1,4 +1,6 @@
 /*! tailwindcss v4.1.7 | MIT License | https://tailwindcss.com */
+@import "bootstrap-icons/font/bootstrap-icons.css";
+@import "@fortawesome/fontawesome-free/css/all.min.css";
 @layer properties;
 @layer theme, base, components, utilities;
 @layer theme {

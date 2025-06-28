@@ -86,6 +86,7 @@ class PermissionMixin(object):
             user_session.set_group_session()
 
             if 'group_id' not in request.session:
+                messages.error(request, 'Su cuenta no es de un papu premium')
                 return redirect('security:signout')
 
             if user.is_superuser:

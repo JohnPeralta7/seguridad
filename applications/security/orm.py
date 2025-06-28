@@ -5,13 +5,6 @@ from applications.security.models import GroupModulePermission, Menu, Module, Us
 
 # Create Menus - using save() and create()
 menu1 = Menu(
-    name='Registros',
-    icon='bi bi-person',
-    order=7
-)
-menu1.save()
-
-menu1 = Menu(
     name='Emergencia',
     icon='fa fa-person',
     order=7
@@ -20,13 +13,13 @@ menu1.save()
 
 menu2 = Menu.objects.create(
     name='Consultas',
-    icon='bi bi-calendar-check',
+    icon='fa fa-calendar-check',
     order=2
 )
 
 menu3 = Menu.objects.create(
     name='Auditores',
-    icon='bi bi-gear',
+    icon='fa fa-file',
     order=4
 )
 
@@ -34,27 +27,25 @@ menu3 = Menu.objects.create(
 modules = [
     
     Module(url='pacientes/', name='Registro de Pacientes', menu_id=menu1.id,
-           description='Gestión de información de pacientes', icon='bi bi-person-plus', order=1),
+           description='Gestión de información de pacientes', icon='fa fa-bed', order=1),
     Module(url='historial/', name='Historial Médico', menu=menu1, 
-           description='Historial clínico de pacientes', icon='bi bi-file-medical', order=2),
+           description='Historial clínico de pacientes', icon='fa fa-medkit', order=2),
     Module(url='seguimiento/', name='Seguimiento', menu=menu1, 
-           description='Seguimiento de tratamientos y evolución', icon='bi bi-graph-up', order=3),
+           description='Seguimiento de tratamientos y evolución', icon='fa fa-book', order=3),
     
     
     Module(url='citas/', name='Citas', menu=menu2, 
-           description='Programación de citas médicas', icon='bi bi-calendar-date', order=1),
+           description='Programación de citas médicas', icon='fa fa-calendar', order=1),
     Module(url='diagnosticos/', name='Diagnósticos', menu=menu2, 
-           description='Registro de diagnósticos médicos', icon='bi bi-clipboard-pulse', order=2),
+           description='Registro de diagnósticos médicos', icon='fa fa-stethoscope', order=2),
     Module(url='recetas/', name='Recetas', menu=menu2, 
-           description='Emisión de recetas médicas', icon='bi bi-file-earmark-text', order=3),
+           description='Emisión de recetas médicas', icon='fa fa-clipboard', order=3),
     
     
-    Module(url='usuarios/', name='Usuarios', menu=menu3, 
-           description='Gestión de usuarios del sistema', icon='bi bi-people', order=1),
     Module(url='configuracion/', name='Configuración', menu=menu3, 
-           description='Configuración general del sistema', icon='bi bi-sliders', order=2),
+           description='Configuración general del sistema', icon='fa fa-cog', order=2),
     Module(url='reportes/', name='Reportes', menu=menu3, 
-           description='Generación de reportes y estadísticas', icon='bi bi-bar-chart', order=3)
+           description='Generación de reportes y estadísticas', icon='fa fa-file-alt', order=3)
 ]
 
 created_modules = Module.objects.bulk_create(modules)
